@@ -1,0 +1,31 @@
+extends layout
+
+block content
+	h1 Control Panel
+	.row
+		.col-sm-6
+			div(id="setType")
+				h4 Set This Node Type:
+				span(style="font-size: 22px;")
+					.row
+						.col-sm-2
+							a(id="setA") A
+						.col-sm-2
+							a(id="setB") B
+						.col-sm-2
+							a(id="setC") C
+						.col-sm-2
+							a(id="setD") D
+
+		.col-sm-6
+			div(id="visibleNodes")
+				h4 Other Nodes On Network:
+				div(id="visibleNodesData", style="font-size: 18px;")
+
+		.col-sm-6
+			div(id="connectToNodes")
+				h4 Connect To Node:
+
+		.col-sm-6
+			div(id="connectedNodes")
+				h4 Connected To Nodes:
