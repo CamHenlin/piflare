@@ -194,10 +194,19 @@ app.post('/set_type', function(req, res) {
 	res.end();
 }); 
 
+
 var os = require('os');
 var ifaces = os.networkInterfaces();
 var my_ip = "";
 var nodes = [];
+var node_connections = [];
+
+app.post('/set_node_connection', function(req, res) {
+	console.log(req);
+	node_connections[parseInt(req.body.node_id)] = req.body.type;
+	res.write('true');
+	res.end();
+}); 
 
 for (var dev in ifaces) {
 	if (dev !== 'eth0') {
@@ -245,9 +254,18 @@ function findOthers() {
 					bodyChunks.push(chunk);
 				}).on('end', function() {
 					var body = Buffer.concat(bodyChunks);
-					console.log('NODE OF TYPE ' + body + ' FOUND AT NODE ' + my_i);
+					body = JSON.parse(body);
+					console.log('NODE OF TYPE ' + body.type + ' FOUND AT NODE ' + my_i);
 
-					nodes[my_i] = body;
+					nodes[my_i] = body.type;
+				});
+			});
+
+			req.on('socket', function (socket) {
+				socket.setTimeout(100);  
+				socket.on('timeout', function() {
+					req.abort();
+					nodes[my_i] = null;
 				});
 			});
 
@@ -265,51 +283,14 @@ app.get('/get_nodes', function(req, res) {
 	res.end();
 }); 
 
-function confirmNodesExist() {
-	for (var i = 1; i < nodes.length; i++) {
-		if (nodes[i] === undefined || nodes[i] === null) {
-			continue;
-		}
-		(function () {
-			var my_i = i;
-
-			var options = {
-				host: lan + my_i,
-				port: app.get('port'),
-				path: '/get_type'
-			};
-
-			var req = http.get(options, function(res) {
-				// console.log('STATUS: ' + res.statusCode);
-				// console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-				// Buffer the body entirely for processing as a whole.
-				var bodyChunks = [];
-				res.on('data', function(chunk) {
-					// You can process streamed parts here...
-					bodyChunks.push(chunk);
-				}).on('end', function() {
-					var body = Buffer.concat(bodyChunks);
-					if (body === nodes[i]) {
-						console.log('NODE OF TYPE ' + body + ' CONFIRMED.');
-					} else {
-						console.log('NODE ' + my_i + ' WAS OF TYPE ' + nodes[my_i] + ' BUT IS NOW OF TYPE ' + body);
-						nodes[i] = body;
-					}
-				});
-			});
-
-			req.on('error', function(e) {
-				nodes[my_i] = null;
-			});
-		})();
-	}
-}
+app.get('/get_node_connections', function(req, res) {
+	res.write(JSON.stringify({ 'node_connections' : node_connections }));
+	res.end();
+}); 
 
 setInterval(function() {
 	findOthers();
-	//confirmNodesExist();
-}, 5000);
+}, 10000);
 
 /**
  * 500 Error Handler.
